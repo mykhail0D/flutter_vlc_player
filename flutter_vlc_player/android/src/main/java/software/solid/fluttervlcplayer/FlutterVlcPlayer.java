@@ -55,7 +55,7 @@ final class FlutterVlcPlayer implements PlatformView {
     private List<RendererItem> rendererItems = new ArrayList<>();
     private boolean isDisposed = false;
 
-    private final HandlerThread bgThread = new HandlerThread("MPHandlerThread");
+    private final HandlerThread bgThread = new HandlerThread("MP-BG_Thread");
     private final Handler bgHandler;
 
     // Platform view
@@ -69,6 +69,12 @@ final class FlutterVlcPlayer implements PlatformView {
         if (isDisposed)
             return;
         //
+        HashMap<String, Object> eventObject = new HashMap<>();
+        eventObject.put("event", "stopped");
+        mediaEventSink.success(eventObject);
+        mediaEventSink.setDelegate(null);
+        rendererEventSink.setDelegate(null);
+
         textureView.dispose();
         textureEntry.release();
         mediaEventChannel.setStreamHandler(null);
@@ -158,6 +164,10 @@ final class FlutterVlcPlayer implements PlatformView {
                 new MediaPlayer.EventListener() {
                     @Override
                     public void onEvent(MediaPlayer.Event event) {
+                        if (mediaPlayer == null) {
+                            return;
+                        }
+
                         HashMap<String, Object> eventObject = new HashMap<>();
                         //
                         // Current video track is only available when the media is playing
@@ -269,7 +279,7 @@ final class FlutterVlcPlayer implements PlatformView {
 
     void stop() {
         if (mediaPlayer != null) {
-            mediaPlayer.stop();
+            bgHandler.post(() ->  mediaPlayer.stop());
         }
     }
 
@@ -284,7 +294,14 @@ final class FlutterVlcPlayer implements PlatformView {
     }
 
     void setStreamUrl(String url, boolean isAssetUrl, boolean autoPlay, long hwAcc) {
-        if (mediaPlayer == null) return;
+        if (mediaPlayer != null && !isDisposed) {
+            bgHandler.removeCallbacksAndMessages(null);
+            bgHandler.post(() -> setStreamUrlAsync(url, isAssetUrl, autoPlay, hwAcc));
+        }
+    }
+
+    private void setStreamUrlAsync(String url, boolean isAssetUrl, boolean autoPlay, long hwAcc) {
+        if (mediaPlayer == null || isDisposed) return;
 
         try {
             mediaPlayer.stop();
@@ -315,9 +332,8 @@ final class FlutterVlcPlayer implements PlatformView {
             mediaPlayer.setMedia(media);
             media.release();
             //
-            mediaPlayer.play();
-            if (!autoPlay) {
-                mediaPlayer.stop();
+            if (autoPlay) {
+                mediaPlayer.play();
             }
         } catch (IOException e) {
             log(e.getMessage());
