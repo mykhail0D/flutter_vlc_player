@@ -12,6 +12,8 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.SurfaceTexture;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.util.Base64;
 import android.util.Log;
 import android.view.Surface;
@@ -53,6 +55,9 @@ final class FlutterVlcPlayer implements PlatformView {
     private List<RendererItem> rendererItems = new ArrayList<>();
     private boolean isDisposed = false;
 
+    private final HandlerThread bgThread = new HandlerThread("MPHandlerThread");
+    private final Handler bgHandler;
+
     // Platform view
     @Override
     public View getView() {
@@ -69,10 +74,16 @@ final class FlutterVlcPlayer implements PlatformView {
         mediaEventChannel.setStreamHandler(null);
         rendererEventChannel.setStreamHandler(null);
         if (mediaPlayer != null) {
-            mediaPlayer.stop();
-            mediaPlayer.getVLCVout().detachViews();
-            mediaPlayer.release();
-            mediaPlayer = null;
+            final MediaPlayer mediaPlayer = this.mediaPlayer;
+            bgHandler.removeCallbacksAndMessages(null);
+            bgHandler.post(() -> {
+                mediaPlayer.stop();
+                mediaPlayer.getVLCVout().detachViews();
+                mediaPlayer.release();
+                bgHandler.removeCallbacksAndMessages(null);
+                bgThread.quit();
+            });
+            this.mediaPlayer = null;
         }
         if (libVLC != null) {
             libVLC.release();
@@ -84,6 +95,9 @@ final class FlutterVlcPlayer implements PlatformView {
     // VLC Player
     FlutterVlcPlayer(int viewId, Context context, BinaryMessenger binaryMessenger, TextureRegistry textureRegistry) {
         this.context = context;
+        bgThread.start();
+        bgHandler = new Handler(bgThread.getLooper());
+
         // event for media
         mediaEventChannel = new EventChannel(binaryMessenger, "flutter_video_plugin/getVideoEvents_" + viewId);
         mediaEventChannel.setStreamHandler(
@@ -350,7 +364,7 @@ final class FlutterVlcPlayer implements PlatformView {
 
     long getPosition() {
         if (mediaPlayer == null) return -1;
-        
+
         return mediaPlayer.getTime();
     }
 
