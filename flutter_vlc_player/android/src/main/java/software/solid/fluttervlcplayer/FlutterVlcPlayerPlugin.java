@@ -1,9 +1,6 @@
 package software.solid.fluttervlcplayer;
 
-import android.os.Build;
-
 import androidx.annotation.NonNull;
-import androidx.annotation.RequiresApi;
 
 import io.flutter.FlutterInjector;
 import io.flutter.plugin.common.PluginRegistry;
@@ -64,7 +61,6 @@ public class FlutterVlcPlayerPlugin implements FlutterPlugin, ActivityAware {
         flutterPluginBinding = null;
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     public void onAttachedToActivity(@NonNull ActivityPluginBinding binding) {
     }
@@ -73,7 +69,6 @@ public class FlutterVlcPlayerPlugin implements FlutterPlugin, ActivityAware {
     public void onDetachedFromActivityForConfigChanges() {
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.N)
     @Override
     public void onReattachedToActivityForConfigChanges(@NonNull ActivityPluginBinding binding) {
     }

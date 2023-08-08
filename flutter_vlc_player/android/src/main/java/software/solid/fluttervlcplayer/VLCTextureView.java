@@ -7,50 +7,42 @@ import android.content.Context;
 import android.graphics.SurfaceTexture;
 import android.view.TextureView;
 import android.view.View;
-import android.os.Handler;
-import android.os.Looper;
 import android.util.AttributeSet;
 import android.view.ViewGroup;
 
+import androidx.annotation.NonNull;
+
 import io.flutter.view.TextureRegistry;
 
-public class VLCTextureView extends TextureView implements TextureView.SurfaceTextureListener, View.OnLayoutChangeListener, IVLCVout.OnNewVideoLayoutListener {
+public class VLCTextureView extends TextureView implements
+        TextureView.SurfaceTextureListener,
+        View.OnLayoutChangeListener,
+        IVLCVout.OnNewVideoLayoutListener {
 
     private MediaPlayer mMediaPlayer = null;
     private TextureRegistry.SurfaceTextureEntry mTextureEntry = null;
-    protected Context mContext;
     private SurfaceTexture mSurfaceTexture = null;
     private boolean wasPlaying = false;
 
-    private Handler mHandler;
-    private Runnable mLayoutChangeRunnable = null;
-
     public VLCTextureView(final Context context) {
-        super(context);
-        mContext = context;
-        initVideoView();
+        this(context, null, 0);
     }
 
     public VLCTextureView(final Context context, final AttributeSet attrs) {
-        super(context, attrs);
-        mContext = context;
-        initVideoView();
+        this(context, attrs, 0);
     }
 
     public VLCTextureView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
-        mContext = context;
-        initVideoView();
+
+        setFocusable(false);
+        setSurfaceTextureListener(this);
+        addOnLayoutChangeListener(this);
     }
 
     public void dispose() {
         setSurfaceTextureListener(null);
         removeOnLayoutChangeListener(this);
-
-        if (mLayoutChangeRunnable != null) {
-            mHandler.removeCallbacks(mLayoutChangeRunnable);
-            mLayoutChangeRunnable = null;
-        }
 
         if (mSurfaceTexture != null) {
             if (!mSurfaceTexture.isReleased()) {
@@ -58,18 +50,11 @@ public class VLCTextureView extends TextureView implements TextureView.SurfaceTe
             }
             mSurfaceTexture = null;
         }
+
         mTextureEntry = null;
         mMediaPlayer = null;
-        mContext = null;
     }
 
-    private void initVideoView() {
-        mHandler = new Handler(Looper.getMainLooper());
-
-        setFocusable(false);
-        setSurfaceTextureListener(this);
-        addOnLayoutChangeListener(this);
-    }
 
     public void setMediaPlayer(MediaPlayer mediaPlayer) {
         if (mediaPlayer == null) {
@@ -84,12 +69,12 @@ public class VLCTextureView extends TextureView implements TextureView.SurfaceTe
     }
 
     public void setTextureEntry(TextureRegistry.SurfaceTextureEntry textureEntry) {
-        this.mTextureEntry = textureEntry;
-        this.updateSurfaceTexture();
+        mTextureEntry = textureEntry;
+        updateSurfaceTexture();
     }
 
     private void updateSurfaceTexture() {
-        if (this.mTextureEntry != null) {
+        if (mTextureEntry != null) {
             final SurfaceTexture texture = this.mTextureEntry.surfaceTexture();
             if (!texture.isReleased() && (getSurfaceTexture() != texture)) {
                 setSurfaceTexture(texture);
@@ -98,18 +83,23 @@ public class VLCTextureView extends TextureView implements TextureView.SurfaceTe
     }
 
     @Override
-    public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+    public void onSurfaceTextureAvailable(@NonNull SurfaceTexture surface, int width, int height) {
         if (mSurfaceTexture == null || mSurfaceTexture.isReleased()) {
             mSurfaceTexture = surface;
 
             if (mMediaPlayer != null) {
-                mMediaPlayer.getVLCVout().setWindowSize(width, height);
-                if (!mMediaPlayer.getVLCVout().areViewsAttached()) {
-                    mMediaPlayer.getVLCVout().setVideoSurface(mSurfaceTexture);
-                    if (!mMediaPlayer.getVLCVout().areViewsAttached()) {
-                        mMediaPlayer.getVLCVout().attachViews(this);
+                final IVLCVout vOut = mMediaPlayer.getVLCVout();
+                vOut.setWindowSize(width, height);
+
+                if (!vOut.areViewsAttached()) {
+                    vOut.setVideoSurface(mSurfaceTexture);
+
+                    if (!vOut.areViewsAttached()) {
+                        vOut.attachViews(this);
                     }
+
                     mMediaPlayer.setVideoTrackEnabled(true);
+
                     if (wasPlaying) {
                         mMediaPlayer.play();
                     }
@@ -117,7 +107,6 @@ public class VLCTextureView extends TextureView implements TextureView.SurfaceTe
             }
 
             wasPlaying = false;
-
         } else {
             if (getSurfaceTexture() != mSurfaceTexture) {
                 setSurfaceTexture(mSurfaceTexture);
@@ -127,12 +116,12 @@ public class VLCTextureView extends TextureView implements TextureView.SurfaceTe
     }
 
     @Override
-    public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
+    public void onSurfaceTextureSizeChanged(@NonNull SurfaceTexture surface, int width, int height) {
         setSize(width, height);
     }
 
     @Override
-    public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+    public boolean onSurfaceTextureDestroyed(@NonNull SurfaceTexture surface) {
         if (mMediaPlayer != null) {
             wasPlaying = mMediaPlayer.isPlaying();
         }
@@ -150,15 +139,14 @@ public class VLCTextureView extends TextureView implements TextureView.SurfaceTe
     }
 
     @Override
-    public void onSurfaceTextureUpdated(SurfaceTexture surface) {
-
+    public void onSurfaceTextureUpdated(@NonNull SurfaceTexture surface) {
     }
 
     @Override
     public void onNewVideoLayout(IVLCVout vlcVout, int width, int height, int visibleWidth, int visibleHeight, int sarNum, int sarDen) {
-        if (width * height == 0) return;
-        
-        setSize(width, height);
+        if (width * height != 0) {
+            setSize(width, height);
+        }
     }
 
     @Override

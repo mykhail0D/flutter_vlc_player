@@ -1,16 +1,9 @@
 package software.solid.fluttervlcplayer;
 
 import android.content.Context;
-import android.content.res.AssetFileDescriptor;
-import android.content.res.AssetManager;
-import android.os.Build;
 import android.util.LongSparseArray;
 
-import androidx.annotation.RequiresApi;
-
-import java.io.File;
 import java.util.ArrayList;
-import java.util.List;
 
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.view.TextureRegistry;
@@ -27,7 +20,6 @@ public class FlutterVlcPlayerBuilder implements Messages.VlcPlayerApi {
     }
 
     void stopListening(BinaryMessenger messenger) {
-//        disposeAllPlayers();
         Messages.VlcPlayerApi.setup(messenger, null);
     }
 
@@ -56,21 +48,25 @@ public class FlutterVlcPlayerBuilder implements Messages.VlcPlayerApi {
     @Override
     public void create(Messages.CreateMessage arg) {
         FlutterVlcPlayer player = vlcPlayers.get(arg.getViewId());
-        //
-        ArrayList<String> options = new ArrayList<String>();
-        if (arg.getOptions().size() > 0)
-            for (Object option : arg.getOptions())
+
+        ArrayList<String> options = new ArrayList<>();
+        if (arg.getOptions().size() > 0) {
+            for (Object option : arg.getOptions()) {
                 options.add((String) option);
+            }
+        }
+
         player.initialize(options);
         //
         String mediaUrl;
         boolean isAssetUrl;
         if (arg.getType() == DataSourceType.ASSET.getNumericType()) {
             String assetLookupKey;
-            if (arg.getPackageName() != null)
+            if (arg.getPackageName() != null) {
                 assetLookupKey = keyForAssetAndPackageName.get(arg.getUri(), arg.getPackageName());
-            else
+            } else {
                 assetLookupKey = keyForAsset.get(arg.getUri());
+            }
             mediaUrl = assetLookupKey;
             isAssetUrl = true;
         } else {

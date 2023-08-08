@@ -43,30 +43,29 @@ final class QueuingEventSink implements EventChannel.EventSink {
     }
 
     private void enqueue(Object event) {
-        if (done) {
-            return;
+        if (!done) {
+            eventQueue.add(event);
         }
-        eventQueue.add(event);
     }
 
     private void maybeFlush() {
-        if (delegate == null) {
-            return;
-        }
-        for (Object event : eventQueue) {
-            if (event instanceof EndOfStreamEvent) {
-                delegate.endOfStream();
-            } else if (event instanceof ErrorEvent) {
-                ErrorEvent errorEvent = (ErrorEvent) event;
-                delegate.error(errorEvent.code, errorEvent.message, errorEvent.details);
-            } else {
-                delegate.success(event);
+        if (delegate != null) {
+            for (Object event : eventQueue) {
+                if (event instanceof EndOfStreamEvent) {
+                    delegate.endOfStream();
+                } else if (event instanceof ErrorEvent) {
+                    ErrorEvent errorEvent = (ErrorEvent) event;
+                    delegate.error(errorEvent.code, errorEvent.message, errorEvent.details);
+                } else {
+                    delegate.success(event);
+                }
             }
+            eventQueue.clear();
         }
-        eventQueue.clear();
     }
 
-    private static class EndOfStreamEvent {}
+    private static class EndOfStreamEvent {
+    }
 
     private static class ErrorEvent {
         String code;
