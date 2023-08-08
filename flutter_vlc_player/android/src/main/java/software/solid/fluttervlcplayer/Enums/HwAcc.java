@@ -7,10 +7,9 @@ public enum HwAcc {
     DECODING(1),
     FULL(2);
 
-    private int mType;
+    private final int mType;
 
-    HwAcc (int type)
-    {
+    HwAcc(int type) {
         this.mType = type;
     }
 

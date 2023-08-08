@@ -6,10 +6,9 @@ public enum DataSourceType {
     NETWORK(1),
     FILE(2);
 
-    private int mType;
+    private final int mType;
 
-    DataSourceType (int type)
-    {
+    DataSourceType(int type) {
         this.mType = type;
     }
 
