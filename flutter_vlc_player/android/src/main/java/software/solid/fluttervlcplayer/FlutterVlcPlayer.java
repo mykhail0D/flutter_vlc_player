@@ -174,22 +174,18 @@ final class FlutterVlcPlayer implements PlatformView {
             }
 
             switch (event.type) {
-
                 case MediaPlayer.Event.Opening:
                     eventObject.put("event", "opening");
                     mediaEventSink.success(eventObject);
                     break;
-
                 case MediaPlayer.Event.Paused:
                     eventObject.put("event", "paused");
                     mediaEventSink.success(eventObject);
                     break;
-
                 case MediaPlayer.Event.Stopped:
                     eventObject.put("event", "stopped");
                     mediaEventSink.success(eventObject);
                     break;
-
                 case MediaPlayer.Event.Playing:
                     eventObject.put("event", "playing");
                     eventObject.put("height", height);
@@ -202,17 +198,14 @@ final class FlutterVlcPlayer implements PlatformView {
                     eventObject.put("activeSpuTrack", mediaPlayer.getSpuTrack());
                     mediaEventSink.success(eventObject.clone());
                     break;
-
                 case MediaPlayer.Event.Vout:
                     //  mediaPlayer.getVLCVout().setWindowSize(textureView.getWidth(), textureView.getHeight());
                     break;
-
                 case MediaPlayer.Event.EndReached:
                     eventObject.put("event", "ended");
                     eventObject.put("position", mediaPlayer.getTime());
                     mediaEventSink.success(eventObject);
                     break;
-
                 case MediaPlayer.Event.Buffering:
                 case MediaPlayer.Event.TimeChanged:
                     eventObject.put("event", "timeChanged");
@@ -229,20 +222,17 @@ final class FlutterVlcPlayer implements PlatformView {
                     eventObject.put("isPlaying", mediaPlayer.isPlaying());
                     mediaEventSink.success(eventObject);
                     break;
-
                 case MediaPlayer.Event.EncounteredError:
                     //mediaEventSink.error("500", "Player State got an error.", null);
                     eventObject.put("event", "error");
                     mediaEventSink.success(eventObject);
                     break;
-
                 case MediaPlayer.Event.RecordChanged:
                     eventObject.put("event", "recording");
                     eventObject.put("isRecording", event.getRecording());
                     eventObject.put("recordPath", event.getRecordPath());
                     mediaEventSink.success(eventObject);
                     break;
-
                 case MediaPlayer.Event.LengthChanged:
                 case MediaPlayer.Event.MediaChanged:
                 case MediaPlayer.Event.ESAdded:
@@ -276,13 +266,11 @@ final class FlutterVlcPlayer implements PlatformView {
     }
 
     boolean isPlaying() {
-        if (mediaPlayer == null) return false;
-        return mediaPlayer.isPlaying();
+        return mediaPlayer != null && mediaPlayer.isPlaying();
     }
 
     boolean isSeekable() {
-        if (mediaPlayer == null) return false;
-        return mediaPlayer.isSeekable();
+        return mediaPlayer != null && mediaPlayer.isSeekable();
     }
 
     void setStreamUrl(String url, boolean isAssetUrl, boolean autoPlay, long hwAcc) {
