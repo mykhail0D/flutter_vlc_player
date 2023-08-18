@@ -75,7 +75,7 @@ public class VLCTextureView extends TextureView implements
 
     private void updateSurfaceTexture() {
         if (mTextureEntry != null) {
-            final SurfaceTexture texture = this.mTextureEntry.surfaceTexture();
+            final SurfaceTexture texture = mTextureEntry.surfaceTexture();
             if (!texture.isReleased() && (getSurfaceTexture() != texture)) {
                 setSurfaceTexture(texture);
             }

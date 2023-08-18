@@ -1,6 +1,10 @@
 package software.solid.fluttervlcplayer;
 
+import androidx.annotation.Nullable;
+
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import io.flutter.plugin.common.EventChannel;
 
@@ -14,8 +18,9 @@ import io.flutter.plugin.common.EventChannel;
  * externally.
  */
 final class QueuingEventSink implements EventChannel.EventSink {
+    @Nullable
     private EventChannel.EventSink delegate;
-    private final ArrayList<Object> eventQueue = new ArrayList<>();
+    private final List<Object> eventQueue = Collections.synchronizedList(new ArrayList<>());
     private boolean done = false;
 
     public void setDelegate(EventChannel.EventSink delegate) {
@@ -50,7 +55,8 @@ final class QueuingEventSink implements EventChannel.EventSink {
 
     private void maybeFlush() {
         if (delegate != null) {
-            for (Object event : eventQueue) {
+            for (int i = 0; i < eventQueue.size(); i++) {
+                Object event = eventQueue.get(i);
                 if (event instanceof EndOfStreamEvent) {
                     delegate.endOfStream();
                 } else if (event instanceof ErrorEvent) {
