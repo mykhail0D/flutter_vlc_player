@@ -98,6 +98,7 @@ final class FlutterVlcPlayer implements PlatformView {
             handler.removeCallbacksAndMessages(null);
 
             mediaPlayer.getVLCVout().detachViews();
+
             runNonBlocking((mediaPlayer) -> {
                 mediaPlayer.stop();
                 mediaPlayer.release();
@@ -304,7 +305,7 @@ final class FlutterVlcPlayer implements PlatformView {
                     new Media(libVLC, context.getAssets().openFd(url)) :
                     new Media(libVLC, Uri.parse(url));
 
-            switch (hwAcc) {
+            switch ((int) hwAcc) {
                 case HwAcc.DISABLED:
                     media.setHWDecoderEnabled(false, false);
                     break;
