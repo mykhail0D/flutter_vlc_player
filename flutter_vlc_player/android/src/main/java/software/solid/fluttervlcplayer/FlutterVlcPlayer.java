@@ -65,7 +65,7 @@ final class FlutterVlcPlayer implements PlatformView {
     private final EventChannel rendererEventChannel;
     //
     private LibVLC libVLC;
-    private VLCMediaPlayer mediaPlayer;
+    private MediaPlayer mediaPlayer;
     private List<String> options;
     private List<RendererDiscoverer> rendererDiscoverers = new ArrayList<>();
     private List<RendererItem> rendererItems = new ArrayList<>();
@@ -162,7 +162,7 @@ final class FlutterVlcPlayer implements PlatformView {
     void initialize(@NonNull List<String> options) {
         this.options = options;
         libVLC = new LibVLC(context, options);
-        mediaPlayer = new VLCMediaPlayer(libVLC);
+        mediaPlayer = new MediaPlayer(libVLC);
         setupVlcMediaPlayer();
     }
 
@@ -263,7 +263,7 @@ final class FlutterVlcPlayer implements PlatformView {
                 default:
                     break;
             }
-        }, handler);
+        });
     }
 
     void play() {
