@@ -54,6 +54,7 @@ final class FlutterVlcPlayer implements PlatformView {
     private static final String VIDEO_RENDER_CHANNEL = "flutter_video_plugin/getRendererEvents_";
     //
     private final Context context;
+    private final Handler handler;
     private final VLCTextureView textureView;
     private final TextureRegistry.SurfaceTextureEntry textureEntry;
     //
@@ -66,9 +67,8 @@ final class FlutterVlcPlayer implements PlatformView {
     private LibVLC libVLC;
     private VLCMediaPlayer mediaPlayer;
     private List<String> options;
-    private final Handler handler;
-    private final List<RendererDiscoverer> rendererDiscoverers = new ArrayList<>();
-    private final List<RendererItem> rendererItems = new ArrayList<>();
+    private List<RendererDiscoverer> rendererDiscoverers = new ArrayList<>();
+    private List<RendererItem> rendererItems = new ArrayList<>();
     private boolean isDisposed = false;
 
 
