@@ -1,41 +1,59 @@
 package software.solid.fluttervlcplayer;
 
 import android.content.Context;
-import android.content.res.AssetFileDescriptor;
-import android.content.res.AssetManager;
-import android.os.Build;
+import android.os.Looper;
 import android.util.LongSparseArray;
 
-import androidx.annotation.RequiresApi;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
-import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.view.TextureRegistry;
-import software.solid.fluttervlcplayer.Enums.DataSourceType;
 
-public class FlutterVlcPlayerBuilder implements Messages.VlcPlayerApi {
+final class FlutterVlcPlayerBuilder implements Messages.VlcPlayerApi {
+
+    private static final class DataSourceType {
+        private static final long ASSET = 0;
+
+        private DataSourceType() {
+        }
+    }
 
     private final LongSparseArray<FlutterVlcPlayer> vlcPlayers = new LongSparseArray<>();
     private FlutterVlcPlayerFactory.KeyForAssetFn keyForAsset;
     private FlutterVlcPlayerFactory.KeyForAssetAndPackageName keyForAssetAndPackageName;
 
-    void startListening(BinaryMessenger messenger) {
+    void startListening(@NonNull BinaryMessenger messenger) {
         Messages.VlcPlayerApi.setup(messenger, this);
     }
 
-    void stopListening(BinaryMessenger messenger) {
-//        disposeAllPlayers();
+    void stopListening(@NonNull BinaryMessenger messenger) {
         Messages.VlcPlayerApi.setup(messenger, null);
     }
 
-    FlutterVlcPlayer build(int viewId, Context context, BinaryMessenger binaryMessenger, TextureRegistry textureRegistry, FlutterVlcPlayerFactory.KeyForAssetFn keyForAsset, FlutterVlcPlayerFactory.KeyForAssetAndPackageName keyForAssetAndPackageName) {
+    @NonNull
+    FlutterVlcPlayer build(
+            int viewId,
+            @NonNull Context context,
+            @NonNull Looper looper,
+            @NonNull BinaryMessenger binaryMessenger,
+            @NonNull TextureRegistry textureRegistry,
+            @NonNull FlutterVlcPlayerFactory.KeyForAssetFn keyForAsset,
+            @NonNull FlutterVlcPlayerFactory.KeyForAssetAndPackageName keyForAssetAndPackageName
+    ) {
         this.keyForAsset = keyForAsset;
         this.keyForAssetAndPackageName = keyForAssetAndPackageName;
         // only create view for player and attach channel events
-        FlutterVlcPlayer vlcPlayer = new FlutterVlcPlayer(viewId, context, binaryMessenger, textureRegistry);
+        FlutterVlcPlayer vlcPlayer = new FlutterVlcPlayer(
+                viewId,
+                context,
+                looper,
+                binaryMessenger,
+                textureRegistry
+        );
         vlcPlayers.append(viewId, vlcPlayer);
         return vlcPlayer;
     }
@@ -44,40 +62,33 @@ public class FlutterVlcPlayerBuilder implements Messages.VlcPlayerApi {
         for (int i = 0; i < vlcPlayers.size(); i++) {
             vlcPlayers.valueAt(i).dispose();
         }
-        vlcPlayers.clear();
 
+        vlcPlayers.clear();
     }
 
     @Override
     public void initialize() {
-//        disposeAllPlayers();
+        //        disposeAllPlayers();
     }
 
     @Override
     public void create(Messages.CreateMessage arg) {
+        List<String> options = arg.getOptions()
+                .stream()
+                .filter(String.class::isInstance)
+                .map(String.class::cast)
+                .collect(Collectors.toList());
+
         FlutterVlcPlayer player = vlcPlayers.get(arg.getViewId());
-        //
-        ArrayList<String> options = new ArrayList<String>();
-        if (arg.getOptions().size() > 0)
-            for (Object option : arg.getOptions())
-                options.add((String) option);
         player.initialize(options);
-        //
-        String mediaUrl;
-        boolean isAssetUrl;
-        if (arg.getType() == DataSourceType.ASSET.getNumericType()) {
-            String assetLookupKey;
-            if (arg.getPackageName() != null)
-                assetLookupKey = keyForAssetAndPackageName.get(arg.getUri(), arg.getPackageName());
-            else
-                assetLookupKey = keyForAsset.get(arg.getUri());
-            mediaUrl = assetLookupKey;
-            isAssetUrl = true;
-        } else {
-            mediaUrl = arg.getUri();
-            isAssetUrl = false;
-        }
-        player.setStreamUrl(mediaUrl, isAssetUrl, arg.getAutoPlay(), arg.getHwAcc());
+        setupStreamUrl(
+                player,
+                arg.getUri(),
+                arg.getPackageName(),
+                arg.getAutoPlay(),
+                arg.getType(),
+                arg.getHwAcc()
+        );
     }
 
     @Override
@@ -88,23 +99,14 @@ public class FlutterVlcPlayerBuilder implements Messages.VlcPlayerApi {
 
     @Override
     public void setStreamUrl(Messages.SetMediaMessage arg) {
-        FlutterVlcPlayer player = vlcPlayers.get(arg.getViewId());
-        //
-        boolean isAssetUrl;
-        String mediaUrl;
-        if (arg.getType() == DataSourceType.ASSET.getNumericType()) {
-            String assetLookupKey;
-            if (arg.getPackageName() != null)
-                assetLookupKey = keyForAssetAndPackageName.get(arg.getUri(), arg.getPackageName());
-            else
-                assetLookupKey = keyForAsset.get(arg.getUri());
-            mediaUrl = assetLookupKey;
-            isAssetUrl = true;
-        } else {
-            mediaUrl = arg.getUri();
-            isAssetUrl = false;
-        }
-        player.setStreamUrl(mediaUrl, isAssetUrl, arg.getAutoPlay(), arg.getHwAcc());
+        setupStreamUrl(
+                vlcPlayers.get(arg.getViewId()),
+                arg.getUri(),
+                arg.getPackageName(),
+                arg.getAutoPlay(),
+                arg.getType(),
+                arg.getHwAcc()
+        );
     }
 
     @Override
@@ -400,7 +402,7 @@ public class FlutterVlcPlayerBuilder implements Messages.VlcPlayerApi {
     @Override
     public Messages.BooleanMessage startRecording(Messages.RecordMessage arg) {
         FlutterVlcPlayer player = vlcPlayers.get(arg.getViewId());
-        Boolean result = player.startRecording(arg.getSaveDirectory());
+        boolean result = player.startRecording(arg.getSaveDirectory());
         Messages.BooleanMessage message = new Messages.BooleanMessage();
         message.setResult(result);
         return message;
@@ -409,9 +411,34 @@ public class FlutterVlcPlayerBuilder implements Messages.VlcPlayerApi {
     @Override
     public Messages.BooleanMessage stopRecording(Messages.ViewMessage arg) {
         FlutterVlcPlayer player = vlcPlayers.get(arg.getViewId());
-        Boolean result = player.stopRecording();
+        boolean result = player.stopRecording();
         Messages.BooleanMessage message = new Messages.BooleanMessage();
         message.setResult(result);
         return message;
     }
+
+    private void setupStreamUrl(
+            @NonNull FlutterVlcPlayer player,
+            @NonNull String uri,
+            @Nullable String packageName,
+            boolean autoPlay,
+            long dataSourceType,
+            long hwAcc
+    ) {
+        final String mediaUrl;
+        final boolean isAssetUrl;
+
+        if (dataSourceType == DataSourceType.ASSET) {
+            mediaUrl = packageName != null
+                    ? keyForAssetAndPackageName.get(uri, packageName)
+                    : keyForAsset.get(uri);
+            isAssetUrl = true;
+        } else {
+            mediaUrl = uri;
+            isAssetUrl = false;
+        }
+
+        player.setStreamUrl(mediaUrl, isAssetUrl, autoPlay, hwAcc);
+    }
+
 }
